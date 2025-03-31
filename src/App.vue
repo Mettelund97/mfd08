@@ -1,85 +1,134 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { onAuthChange, logoutUser } from '@/services/authServices';
+
+const router = useRouter();
+const user = ref(null);
+const currentYear = computed(() => new Date().getFullYear());
+
+// Handle user auth state changes
+onMounted(() => {
+  const unsubscribe = onAuthChange((currentUser) => {
+    user.value = currentUser;
+  });
+  
+  // Clean up subscription on component unmount
+  return () => unsubscribe();
+});
+
+// Logout function
+const logout = async () => {
+  try {
+    await logoutUser();
+    router.push('/login');
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
+};
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
+  <div class="app">
+    <header>
+      <nav class="navbar">
+        <router-link to="/" class="logo">DagensInput</router-link>
+        
+        <div class="nav-links">
+          <template v-if="user">
+            <router-link to="/" class="nav-link">DagensInput</router-link>
+            <router-link to="/new" class="nav-link">Opret nyt input</router-link>
+            <button @click="logout" class="nav-link logout-btn">Log ud</button>
+            <span class="user-info">{{ user.displayName || user.email }}</span>
+          </template>
+          <template v-else>
+            <router-link to="/login" class="nav-link">Log ind</router-link>
+            <router-link to="/signup" class="nav-link">Opret Bruger</router-link>
+          </template>
+        </div>
       </nav>
-    </div>
-  </header>
-
-  <RouterView />
+    </header>
+    
+    <main class="main-content">
+      <router-view />
+    </main>
+  </div>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
+<style>
+/* Global styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background-color: #f9f9f9;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #4285f4;
+  color: white;
 }
 
 .logo {
-  display: block;
-  margin: 0 auto 2rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+  text-decoration: none;
 }
 
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
 }
 
-nav a.router-link-exact-active {
-  color: var(--color-text);
+.nav-link {
+  color: white;
+  text-decoration: none;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
 }
 
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
+.logout-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-family: inherit;
 }
 
-nav a:first-of-type {
-  border: 0;
+.user-info {
+  margin-left: 0.5rem;
+  padding: 0.8rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  text-transform: capitalize;
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
+.main-content {
+  flex: 1;
+  padding: 2rem 1rem;
 }
 </style>
